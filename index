@@ -1,0 +1,1969 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PlanOS</title>
+    <style>
+      /* ==========================================
+           1. 现代设计系统 (Design Tokens)
+           ========================================== */
+      :root {
+        --primary: #6366f1;
+        --primary-hover: #4f46e5;
+        --primary-light: #e0e7ff;
+        --bg-body: #f8fafc;
+        --surface: #ffffff;
+        --surface-hover: #f1f5f9;
+        --text-main: #0f172a;
+        --text-muted: #64748b;
+        --text-disabled: #94a3b8;
+        --border-light: #e2e8f0;
+        --success: #10b981;
+        --danger: #ef4444;
+        --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+        --shadow-md:
+          0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        --shadow-lg:
+          0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+        --radius-md: 12px;
+        --radius-lg: 16px;
+        --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        --hour-height: 64px;
+        --hour-width: 90px;
+        --day-height: 72px;
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        background-color: var(--bg-body);
+        color: var(--text-main);
+        display: flex;
+        height: 100vh;
+        overflow: hidden;
+        font-family:
+          "Inter",
+          -apple-system,
+          sans-serif;
+        -webkit-font-smoothing: antialiased;
+      }
+      ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+      }
+      ::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 4px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: #94a3b8;
+      }
+
+      nav {
+        width: 260px;
+        background: var(--surface);
+        padding: 32px 20px;
+        border-right: 1px solid var(--border-light);
+        display: flex;
+        flex-direction: column;
+        z-index: 10;
+      }
+      nav h1 {
+        font-size: 1.5rem;
+        font-weight: 800;
+        color: var(--text-main);
+        margin-bottom: 40px;
+        text-align: left;
+        padding-left: 12px;
+        letter-spacing: -0.02em;
+      }
+      nav h1 span {
+        color: var(--primary);
+      }
+      .nav-item {
+        padding: 14px 16px;
+        margin-bottom: 8px;
+        border-radius: 10px;
+        cursor: pointer;
+        transition: var(--transition);
+        color: var(--text-muted);
+        font-weight: 500;
+        font-size: 0.95rem;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .nav-item:hover {
+        background: var(--surface-hover);
+        color: var(--text-main);
+      }
+      .nav-item.active {
+        background: var(--primary);
+        color: white;
+        box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+      }
+
+      main {
+        flex: 1;
+        padding: 40px;
+        overflow-y: auto;
+        position: relative;
+      }
+      .view-section {
+        display: none;
+        animation: slideFadeUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      }
+      .view-section.active {
+        display: block;
+      }
+      @keyframes slideFadeUp {
+        from {
+          opacity: 0;
+          transform: translateY(15px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .card {
+        background: var(--surface);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-sm);
+        border: 1px solid var(--border-light);
+        padding: 30px;
+        margin-bottom: 30px;
+      }
+      .section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 24px;
+      }
+      .section-header h2 {
+        font-size: 1.5rem;
+        font-weight: 700;
+        letter-spacing: -0.01em;
+      }
+
+      button {
+        background: var(--primary);
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 600;
+        font-size: 0.9rem;
+        transition: var(--transition);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+      }
+      button:hover {
+        background: var(--primary-hover);
+        transform: translateY(-1px);
+        box-shadow: var(--shadow-md);
+      }
+      button:active {
+        transform: translateY(0);
+      }
+      .btn-ghost {
+        background: transparent;
+        color: var(--text-muted);
+        border: 1px solid var(--border-light);
+      }
+      .btn-ghost:hover {
+        background: var(--surface-hover);
+        color: var(--text-main);
+        box-shadow: none;
+      }
+
+      /* ==========================================
+           课表视图 (日历与甘特图)
+           ========================================== */
+      .calendar-wrapper {
+        border: 1px solid var(--border-light);
+        border-radius: var(--radius-md);
+        overflow: hidden;
+        background: var(--surface);
+      }
+      .calendar-header {
+        display: flex;
+        border-bottom: 1px solid var(--border-light);
+        background: var(--bg-body);
+      }
+      .header-spacer {
+        width: 70px;
+        border-right: 1px solid var(--border-light);
+        flex-shrink: 0;
+      }
+      .day-header {
+        flex: 1;
+        text-align: center;
+        padding: 16px 0;
+        font-weight: 600;
+        border-right: 1px solid var(--border-light);
+        color: var(--text-muted);
+        font-size: 0.9rem;
+      }
+      .day-header:last-child {
+        border-right: none;
+      }
+
+      .calendar-body {
+        display: flex;
+        height: 65vh;
+        overflow-y: auto;
+        position: relative;
+      }
+      .time-axis {
+        width: 70px;
+        border-right: 1px solid var(--border-light);
+        background: var(--bg-body);
+        flex-shrink: 0;
+      }
+      .time-label {
+        height: var(--hour-height);
+        text-align: right;
+        padding-right: 12px;
+        font-size: 0.8rem;
+        color: var(--text-disabled);
+        font-weight: 500;
+        position: relative;
+        top: -10px;
+      }
+
+      .day-column {
+        flex: 1;
+        border-right: 1px solid var(--border-light);
+        position: relative;
+        background-image: linear-gradient(
+          to bottom,
+          var(--border-light) 1px,
+          transparent 1px
+        );
+        background-size: 100% var(--hour-height);
+        cursor: crosshair;
+        transition: background-color 0.2s;
+        min-width: 120px;
+      }
+      .day-column:hover {
+        background-color: rgba(99, 102, 241, 0.02);
+      }
+
+      .class-block {
+        position: absolute;
+        left: 6px;
+        right: 6px;
+        border-radius: 6px;
+        padding: 8px 10px;
+        font-size: 0.85rem;
+        overflow: hidden;
+        border-left: 4px solid;
+        cursor: pointer;
+        transition: var(--transition);
+        z-index: 5;
+        line-height: 1.4;
+      }
+      .class-block:hover {
+        transform: scale(1.02) translateY(-2px);
+        z-index: 10;
+        box-shadow: var(--shadow-md);
+        filter: brightness(0.95);
+      }
+      .class-title {
+        font-weight: 700;
+        margin-bottom: 4px;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
+      .class-room {
+        font-size: 0.75rem;
+        opacity: 0.8;
+        font-weight: 500;
+      }
+
+      .calendar-horizontal {
+        display: flex;
+        flex-direction: column;
+        overflow-x: auto;
+        overflow-y: auto;
+        height: 65vh;
+        background: var(--surface);
+        border: 1px solid var(--border-light);
+        border-radius: var(--radius-md);
+      }
+      .time-header-row {
+        display: flex;
+        border-bottom: 1px solid var(--border-light);
+        background: var(--bg-body);
+        position: sticky;
+        top: 0;
+        z-index: 20;
+        width: max-content;
+        min-width: 100%;
+      }
+      .time-header-cell {
+        width: var(--hour-width);
+        flex-shrink: 0;
+        padding: 12px 0;
+        font-size: 0.8rem;
+        color: var(--text-muted);
+        font-weight: 600;
+        border-right: 1px solid var(--border-light);
+        padding-left: 10px;
+      }
+      .day-row-container {
+        display: flex;
+        flex-direction: column;
+        width: max-content;
+        min-width: 100%;
+      }
+      .day-row {
+        display: flex;
+        border-bottom: 1px solid var(--border-light);
+        height: var(--day-height);
+      }
+      .day-row:last-child {
+        border-bottom: none;
+      }
+      .day-label-cell {
+        width: 70px;
+        flex-shrink: 0;
+        background: var(--bg-body);
+        border-right: 1px solid var(--border-light);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        font-size: 0.9rem;
+        color: var(--text-muted);
+        position: sticky;
+        left: 0;
+        z-index: 15;
+        box-shadow: 2px 0 5px rgba(0, 0, 0, 0.03);
+      }
+      .day-track {
+        flex: 1;
+        position: relative;
+        background-image: linear-gradient(
+          to right,
+          var(--border-light) 1px,
+          transparent 1px
+        );
+        background-size: var(--hour-width) 100%;
+        cursor: crosshair;
+        min-width: calc(16 * var(--hour-width));
+      }
+      .day-track:hover {
+        background-color: rgba(99, 102, 241, 0.02);
+      }
+      .class-block-h {
+        position: absolute;
+        top: 8px;
+        bottom: 8px;
+        border-radius: 6px;
+        padding: 8px 12px;
+        font-size: 0.85rem;
+        overflow: hidden;
+        border-left: 4px solid;
+        cursor: pointer;
+        transition: var(--transition);
+        z-index: 5;
+        line-height: 1.4;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        box-shadow: var(--shadow-sm);
+      }
+      .class-block-h:hover {
+        transform: scale(1.01) translateY(-1px);
+        z-index: 10;
+        box-shadow: var(--shadow-md);
+        filter: brightness(0.95);
+      }
+      .class-title-h {
+        font-weight: 700;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .class-room-h {
+        font-size: 0.75rem;
+        opacity: 0.8;
+        font-weight: 500;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        margin-top: 2px;
+      }
+
+      /* 色块选择器 */
+      .color-picker {
+        display: flex;
+        gap: 12px;
+        margin-top: 8px;
+        flex-wrap: wrap;
+      }
+      .color-swatch {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        cursor: pointer;
+        transition: var(--transition);
+        border: 2px solid transparent;
+        box-sizing: border-box;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .color-swatch:hover {
+        transform: scale(1.1);
+      }
+      .color-swatch.selected {
+        transform: scale(1.15);
+        box-shadow:
+          0 0 0 2px var(--surface),
+          0 0 0 4px var(--primary);
+      }
+
+      /* ==========================================
+           项目与作业卡片 (全新主卡片拖拽样式)
+           ========================================== */
+      .project-input-area {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 30px;
+        background: var(--surface);
+        padding: 20px;
+        border-radius: var(--radius-md);
+        border: 1px solid var(--border-light);
+        box-shadow: var(--shadow-sm);
+      }
+      .project-input-area input {
+        flex: 1;
+        padding: 12px 16px;
+        border: 1px solid var(--border-light);
+        border-radius: 8px;
+        font-size: 1rem;
+        transition: var(--transition);
+        background: var(--bg-body);
+      }
+      .project-input-area input:focus {
+        outline: none;
+        border-color: var(--primary);
+        background: var(--surface);
+        box-shadow: 0 0 0 3px var(--primary-light);
+      }
+      .project-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+        gap: 24px;
+        align-items: start;
+      }
+
+      .project-card {
+        background: var(--surface);
+        border: 1px solid var(--border-light);
+        border-radius: var(--radius-md);
+        padding: 24px;
+        display: flex;
+        flex-direction: column;
+        box-shadow: var(--shadow-sm);
+        transition:
+          transform 0.2s,
+          box-shadow 0.2s,
+          opacity 0.2s,
+          border 0.2s;
+      }
+      .project-card:hover {
+        box-shadow: var(--shadow-md);
+        border-color: #cbd5e1;
+      }
+
+      /* 主卡片拖拽时的悬浮态与占位态 */
+      .project-card.dragging-card {
+        opacity: 0.6;
+        transform: scale(0.98);
+        border: 2px dashed var(--primary);
+        z-index: 10;
+        box-shadow: none;
+      }
+      .project-card.drag-over-card {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 4px var(--primary-light);
+        transform: scale(1.02);
+        z-index: 10;
+      }
+
+      .project-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+      }
+      .project-card-header h3 {
+        font-size: 1.15rem;
+        font-weight: 700;
+        color: var(--text-main);
+        margin: 0;
+        line-height: 1.3;
+      }
+
+      /* 主卡片的拖拽手柄 */
+      .card-drag-handle {
+        display: flex;
+        align-items: center;
+        cursor: grab;
+        color: var(--text-disabled);
+        transition: color 0.2s;
+        margin-right: 10px;
+      }
+      .card-drag-handle:active {
+        cursor: grabbing;
+      }
+      .project-card:hover .card-drag-handle {
+        color: var(--text-muted);
+      }
+      .card-drag-handle:hover {
+        color: var(--text-main);
+      }
+
+      .progress-container {
+        width: 100%;
+        background: var(--bg-body);
+        height: 6px;
+        border-radius: 4px;
+        margin-bottom: 20px;
+        overflow: hidden;
+      }
+      .progress-bar {
+        height: 100%;
+        background: linear-gradient(90deg, var(--primary), #818cf8);
+        transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+
+      /* 子任务拖拽相关 */
+      .task-list {
+        flex: 1;
+        overflow-y: auto;
+        max-height: 280px;
+        margin-bottom: 16px;
+        padding-right: 4px;
+      }
+      .task-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 0;
+        border-bottom: 1px solid #f1f5f9;
+        transition:
+          opacity 0.2s,
+          background 0.2s,
+          border 0.2s;
+      }
+      .task-item:last-child {
+        border-bottom: none;
+      }
+      .task-item.dragging {
+        opacity: 0.4;
+        background: var(--surface-hover);
+        border-radius: 6px;
+      }
+      .task-item.drag-over {
+        border-top: 2px dashed var(--primary);
+        padding-top: 8px;
+      }
+
+      .task-item-left {
+        display: flex;
+        align-items: center;
+        font-size: 0.95rem;
+        color: var(--text-main);
+        font-weight: 500;
+        transition: var(--transition);
+      }
+      .task-item.completed .task-item-left {
+        color: var(--text-disabled);
+        text-decoration: line-through;
+      }
+
+      /* 子任务手柄 */
+      .drag-handle {
+        display: flex;
+        align-items: center;
+        cursor: grab;
+        color: var(--text-disabled);
+        opacity: 0;
+        transition: opacity 0.2s;
+        margin-right: 8px;
+      }
+      .drag-handle:active {
+        cursor: grabbing;
+      }
+      .task-item:hover .drag-handle {
+        opacity: 1;
+      }
+
+      .custom-checkbox {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        cursor: pointer;
+      }
+      .custom-checkbox input {
+        position: absolute;
+        opacity: 0;
+        cursor: pointer;
+        height: 0;
+        width: 0;
+      }
+      .checkmark {
+        width: 20px;
+        height: 20px;
+        border: 2px solid var(--border-light);
+        border-radius: 6px;
+        background: var(--surface);
+        transition: var(--transition);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 12px;
+      }
+      .custom-checkbox:hover input ~ .checkmark {
+        border-color: var(--primary);
+      }
+      .custom-checkbox input:checked ~ .checkmark {
+        background: var(--primary);
+        border-color: var(--primary);
+      }
+      .checkmark::after {
+        content: "";
+        display: none;
+        width: 5px;
+        height: 10px;
+        border: solid white;
+        border-width: 0 2px 2px 0;
+        transform: rotate(45deg);
+        margin-bottom: 2px;
+      }
+      .custom-checkbox input:checked ~ .checkmark::after {
+        display: block;
+      }
+
+      .add-subtask-area {
+        display: flex;
+        gap: 8px;
+        margin-top: auto;
+        position: relative;
+      }
+      .add-subtask-area input {
+        flex: 1;
+        padding: 10px 14px;
+        border: 1px solid var(--border-light);
+        border-radius: 6px;
+        font-size: 0.9rem;
+        transition: var(--transition);
+      }
+      .add-subtask-area input:focus {
+        outline: none;
+        border-color: var(--primary);
+      }
+      .icon-btn {
+        background: none;
+        border: none;
+        padding: 6px;
+        border-radius: 6px;
+        cursor: pointer;
+        color: var(--text-muted);
+        transition: var(--transition);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .icon-btn:hover {
+        background: var(--surface-hover);
+        color: var(--text-main);
+        transform: translateY(0);
+        box-shadow: none;
+      }
+      .icon-btn.danger:hover {
+        background: #fef2f2;
+        color: var(--danger);
+      }
+      .task-item:hover .delete-btn {
+        opacity: 1;
+      }
+      .delete-btn {
+        opacity: 0;
+      }
+
+      /* 专注与模态框 */
+      .timer-container {
+        text-align: center;
+        padding: 60px 0;
+        max-width: 600px;
+        margin: 0 auto;
+      }
+      .time-display {
+        font-size: 7rem;
+        font-weight: 800;
+        color: var(--text-main);
+        font-variant-numeric: tabular-nums;
+        margin: 30px 0;
+        letter-spacing: -0.03em;
+        text-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+      }
+      .timer-modes {
+        display: inline-flex;
+        background: var(--bg-body);
+        padding: 4px;
+        border-radius: 10px;
+        margin-bottom: 10px;
+        border: 1px solid var(--border-light);
+      }
+      .timer-modes button {
+        background: transparent;
+        color: var(--text-muted);
+        border: none;
+        box-shadow: none;
+        font-weight: 500;
+        padding: 8px 24px;
+        border-radius: 6px;
+      }
+      .timer-modes button.active {
+        background: var(--surface);
+        color: var(--text-main);
+        box-shadow: var(--shadow-sm);
+      }
+      .timer-modes button:hover:not(.active) {
+        background: rgba(0, 0, 0, 0.02);
+        transform: none;
+      }
+
+      .modal-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(15, 23, 42, 0.4);
+        backdrop-filter: blur(4px);
+        z-index: 100;
+        justify-content: center;
+        align-items: center;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+      }
+      .modal-overlay.active {
+        display: flex;
+        opacity: 1;
+      }
+      .modal-content {
+        background: var(--surface);
+        padding: 32px;
+        border-radius: var(--radius-lg);
+        width: 500px;
+        max-height: 90vh;
+        overflow-y: auto;
+        box-shadow: var(--shadow-lg);
+        transform: scale(0.95);
+        transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      }
+      .modal-overlay.active .modal-content {
+        transform: scale(1);
+      }
+      .modal-content h3 {
+        margin-bottom: 24px;
+        color: var(--text-main);
+        font-size: 1.25rem;
+      }
+      .form-group {
+        margin-bottom: 16px;
+      }
+      .form-group label {
+        display: block;
+        margin-bottom: 6px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: var(--text-muted);
+      }
+      .form-group input,
+      .form-group select {
+        width: 100%;
+        padding: 12px;
+        border: 1px solid var(--border-light);
+        border-radius: 8px;
+        background: var(--bg-body);
+        font-size: 0.95rem;
+        transition: var(--transition);
+      }
+      .form-group input:focus,
+      .form-group select:focus {
+        outline: none;
+        border-color: var(--primary);
+        background: var(--surface);
+      }
+      .schedule-row {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        background: var(--bg-body);
+        padding: 12px;
+        border-radius: 8px;
+        border: 1px solid var(--border-light);
+        margin-bottom: 8px;
+      }
+      .schedule-row select,
+      .schedule-row input {
+        padding: 8px;
+        border: 1px solid var(--border-light);
+        border-radius: 6px;
+        font-size: 0.9rem;
+        flex: 1;
+        background: var(--surface);
+      }
+      .modal-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+        margin-top: 32px;
+      }
+
+      #toast-container {
+        position: fixed;
+        bottom: 30px;
+        right: 30px;
+        z-index: 9999;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        pointer-events: none;
+      }
+      .toast {
+        background: var(--text-main);
+        color: white;
+        padding: 14px 24px;
+        border-radius: 8px;
+        box-shadow: var(--shadow-lg);
+        font-size: 0.95rem;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        animation: slideInRight 0.3s forwards;
+        pointer-events: auto;
+      }
+      .toast.success {
+        border-left: 4px solid var(--success);
+      }
+      .toast.error {
+        border-left: 4px solid var(--danger);
+      }
+      .toast.fade-out {
+        animation: fadeOut 0.3s forwards;
+      }
+      @keyframes slideInRight {
+        from {
+          transform: translateX(100%);
+          opacity: 0;
+        }
+        to {
+          transform: translateX(0);
+          opacity: 1;
+        }
+      }
+      @keyframes fadeOut {
+        to {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+      }
+      .empty-state {
+        text-align: center;
+        padding: 40px 20px;
+        color: var(--text-muted);
+        grid-column: 1 / -1;
+      }
+      .empty-state svg {
+        width: 48px;
+        height: 48px;
+        margin-bottom: 16px;
+        opacity: 0.5;
+      }
+      .empty-state h4 {
+        font-size: 1.1rem;
+        color: var(--text-main);
+        margin-bottom: 8px;
+      }
+    </style>
+  </head>
+  <body>
+    <nav>
+      <h1>Plan<span>OS</span></h1>
+      <div class="nav-item active" onclick="switchView('timetable', this)">
+        <svg
+          width="20"
+          height="20"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          viewBox="0 0 24 24"
+        >
+          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+          <line x1="16" y1="2" x2="16" y2="6"></line>
+          <line x1="8" y1="2" x2="8" y2="6"></line>
+          <line x1="3" y1="10" x2="21" y2="10"></line>
+        </svg>
+        时间轴视图
+      </div>
+      <div class="nav-item" onclick="switchView('assignments', this)">
+        <svg
+          width="20"
+          height="20"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          viewBox="0 0 24 24"
+        >
+          <path
+            d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"
+          ></path>
+          <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+        </svg>
+        待处理作业
+      </div>
+      <div class="nav-item" onclick="switchView('projects', this)">
+        <svg
+          width="20"
+          height="20"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          viewBox="0 0 24 24"
+        >
+          <path
+            d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"
+          ></path>
+        </svg>
+        项目与目标
+      </div>
+      <div class="nav-item" onclick="switchView('focus', this)">
+        <svg
+          width="20"
+          height="20"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          viewBox="0 0 24 24"
+        >
+          <circle cx="12" cy="12" r="10"></circle>
+          <polyline points="12 6 12 12 16 14"></polyline>
+        </svg>
+        心流实验室
+      </div>
+    </nav>
+
+    <main>
+      <section id="view-timetable" class="view-section active">
+        <div class="section-header">
+          <h2>日程安排</h2>
+          <div style="display: flex; gap: 12px">
+            <button
+              class="btn-ghost"
+              id="layout-toggle-btn"
+              onclick="toggleLayout()"
+            ></button>
+            <button onclick="openModal()">
+              <svg
+                width="16"
+                height="16"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+              >
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line></svg
+              >新建
+            </button>
+          </div>
+        </div>
+
+        <div class="calendar-wrapper" id="calendar-vertical">
+          <div class="calendar-header">
+            <div class="header-spacer"></div>
+            <div class="day-header">周一</div>
+            <div class="day-header">周二</div>
+            <div class="day-header">周三</div>
+            <div class="day-header">周四</div>
+            <div class="day-header">周五</div>
+            <div class="day-header">周六</div>
+            <div class="day-header">周日</div>
+          </div>
+          <div class="calendar-body" id="vertical-body">
+            <div class="time-axis" id="v-time-axis"></div>
+            <div
+              class="day-column"
+              data-day="1"
+              onclick="handleVerticalClick(event, 1)"
+            ></div>
+            <div
+              class="day-column"
+              data-day="2"
+              onclick="handleVerticalClick(event, 2)"
+            ></div>
+            <div
+              class="day-column"
+              data-day="3"
+              onclick="handleVerticalClick(event, 3)"
+            ></div>
+            <div
+              class="day-column"
+              data-day="4"
+              onclick="handleVerticalClick(event, 4)"
+            ></div>
+            <div
+              class="day-column"
+              data-day="5"
+              onclick="handleVerticalClick(event, 5)"
+            ></div>
+            <div
+              class="day-column"
+              data-day="6"
+              onclick="handleVerticalClick(event, 6)"
+            ></div>
+            <div
+              class="day-column"
+              data-day="7"
+              onclick="handleVerticalClick(event, 7)"
+            ></div>
+          </div>
+        </div>
+
+        <div
+          class="calendar-horizontal"
+          id="calendar-horizontal"
+          style="display: none"
+        >
+          <div class="time-header-row" id="h-time-header">
+            <div
+              class="header-spacer"
+              style="
+                width: 70px;
+                flex-shrink: 0;
+                position: sticky;
+                left: 0;
+                background: var(--bg-body);
+                border-right: 1px solid var(--border-light);
+                z-index: 30;
+              "
+            ></div>
+          </div>
+          <div class="day-row-container">
+            <div class="day-row">
+              <div class="day-label-cell">周一</div>
+              <div
+                class="day-track"
+                data-h-day="1"
+                onclick="handleHorizontalClick(event, 1)"
+              ></div>
+            </div>
+            <div class="day-row">
+              <div class="day-label-cell">周二</div>
+              <div
+                class="day-track"
+                data-h-day="2"
+                onclick="handleHorizontalClick(event, 2)"
+              ></div>
+            </div>
+            <div class="day-row">
+              <div class="day-label-cell">周三</div>
+              <div
+                class="day-track"
+                data-h-day="3"
+                onclick="handleHorizontalClick(event, 3)"
+              ></div>
+            </div>
+            <div class="day-row">
+              <div class="day-label-cell">周四</div>
+              <div
+                class="day-track"
+                data-h-day="4"
+                onclick="handleHorizontalClick(event, 4)"
+              ></div>
+            </div>
+            <div class="day-row">
+              <div class="day-label-cell">周五</div>
+              <div
+                class="day-track"
+                data-h-day="5"
+                onclick="handleHorizontalClick(event, 5)"
+              ></div>
+            </div>
+            <div class="day-row">
+              <div class="day-label-cell">周六</div>
+              <div
+                class="day-track"
+                data-h-day="6"
+                onclick="handleHorizontalClick(event, 6)"
+              ></div>
+            </div>
+            <div class="day-row">
+              <div class="day-label-cell">周日</div>
+              <div
+                class="day-track"
+                data-h-day="7"
+                onclick="handleHorizontalClick(event, 7)"
+              ></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="view-assignments" class="view-section">
+        <div class="section-header"><h2>待处理作业</h2></div>
+        <div class="project-input-area">
+          <input
+            type="text"
+            id="new-assignment-input"
+            placeholder="输入学科或作业分类，例如：线性代数作业..."
+            onkeypress="if (event.key === 'Enter') addAssignment();"
+          />
+          <button onclick="addAssignment()">创建分类</button>
+        </div>
+        <div class="project-grid" id="assignment-container"></div>
+      </section>
+
+      <section id="view-projects" class="view-section">
+        <div class="section-header"><h2>长线项目与目标</h2></div>
+        <div class="project-input-area">
+          <input
+            type="text"
+            id="new-project-input"
+            placeholder="输入长线项目名称，例如：期末总复习..."
+            onkeypress="if (event.key === 'Enter') addProject();"
+          />
+          <button onclick="addProject()">创建项目</button>
+        </div>
+        <div class="project-grid" id="project-container"></div>
+      </section>
+
+      <section id="view-focus" class="view-section">
+        <div class="card timer-container">
+          <div class="timer-modes">
+            <button
+              id="mode-work"
+              class="active"
+              onclick="setTimerMode('work')"
+            >
+              沉浸专注</button
+            ><button id="mode-break" onclick="setTimerMode('break')">
+              短休息
+            </button>
+          </div>
+          <div class="time-display" id="time-display">25:00</div>
+          <div style="display: flex; justify-content: center; gap: 16px">
+            <button
+              id="timer-btn"
+              onclick="toggleTimer()"
+              style="padding: 14px 40px; font-size: 1.1rem; border-radius: 30px"
+            >
+              开始专注
+            </button>
+            <button
+              class="btn-ghost"
+              onclick="resetTimer()"
+              style="padding: 14px 20px; border-radius: 30px"
+            >
+              <svg
+                width="20"
+                height="20"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+              >
+                <polyline points="1 4 1 10 7 10"></polyline>
+                <polyline points="23 20 23 14 17 14"></polyline>
+                <path
+                  d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"
+                ></path>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <div id="toast-container"></div>
+
+    <div
+      class="modal-overlay"
+      id="class-modal"
+      onclick="if (event.target === this) closeModal();"
+    >
+      <div class="modal-content">
+        <h3 id="modal-title">添加课程/事项</h3>
+        <input type="hidden" id="c-id" /><input
+          type="hidden"
+          id="c-color-idx"
+          value="0"
+        />
+        <div class="form-group">
+          <label>课程名称</label
+          ><input type="text" id="c-name" placeholder="例如：高等数学" />
+        </div>
+        <div class="form-group">
+          <label>主题颜色</label>
+          <div class="color-picker" id="color-picker-container"></div>
+        </div>
+        <div class="form-group">
+          <label>地点/备注 (选填)</label
+          ><input type="text" id="c-room" placeholder="例如：教学楼 A302" />
+        </div>
+        <div class="form-group">
+          <div
+            style="
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              margin-bottom: 10px;
+            "
+          >
+            <label style="margin: 0">上课时间段</label
+            ><button
+              class="btn-ghost"
+              style="padding: 4px 10px; font-size: 0.8rem; height: auto"
+              onclick="addScheduleRow()"
+            >
+              + 增加时间
+            </button>
+          </div>
+          <div
+            id="schedules-container"
+            style="
+              display: flex;
+              flex-direction: column;
+              max-height: 180px;
+              overflow-y: auto;
+              padding-right: 4px;
+            "
+          ></div>
+        </div>
+        <div class="modal-actions">
+          <button
+            class="icon-btn danger"
+            id="btn-delete-class"
+            onclick="deleteClass()"
+            style="
+              display: none;
+              margin-right: auto;
+              width: auto;
+              padding: 10px 15px;
+            "
+          >
+            删除
+          </button>
+          <button class="btn-ghost" onclick="closeModal()">取消</button>
+          <button onclick="saveClass()">保存设定</button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      function showToast(message, type = "success") {
+        const container = document.getElementById("toast-container");
+        const toast = document.createElement("div");
+        toast.className = `toast ${type}`;
+        const icon =
+          type === "success"
+            ? `<svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>`
+            : `<svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>`;
+        toast.innerHTML = `${icon} <span>${message}</span>`;
+        container.appendChild(toast);
+        setTimeout(() => {
+          toast.classList.add("fade-out");
+          setTimeout(() => toast.remove(), 300);
+        }, 3000);
+      }
+
+      const START_HOUR = 8;
+      const END_HOUR = 22;
+      const HOUR_HEIGHT = 64;
+      const HOUR_WIDTH = 90;
+      let layoutMode = localStorage.getItem("campus_layout") || "vertical";
+
+      function switchView(viewId, navElement) {
+        document
+          .querySelectorAll(".view-section")
+          .forEach((el) => el.classList.remove("active"));
+        document
+          .querySelectorAll(".nav-item")
+          .forEach((el) => el.classList.remove("active"));
+        document.getElementById("view-" + viewId).classList.add("active");
+        navElement.classList.add("active");
+      }
+
+      let appData = {
+        classes: JSON.parse(localStorage.getItem("campus_classes_v2")) || [],
+        projects: JSON.parse(localStorage.getItem("campus_projects")) || [],
+        assignments:
+          JSON.parse(localStorage.getItem("campus_assignments")) || [],
+      };
+      function saveData() {
+        localStorage.setItem(
+          "campus_classes_v2",
+          JSON.stringify(appData.classes),
+        );
+        localStorage.setItem(
+          "campus_projects",
+          JSON.stringify(appData.projects),
+        );
+        localStorage.setItem(
+          "campus_assignments",
+          JSON.stringify(appData.assignments),
+        );
+      }
+
+      const courseThemes = [
+        { bg: "#e0e7ff", border: "#6366f1" },
+        { bg: "#dbeafe", border: "#3b82f6" },
+        { bg: "#dcfce7", border: "#10b981" },
+        { bg: "#fef3c7", border: "#f59e0b" },
+        { bg: "#fee2e2", border: "#ef4444" },
+        { bg: "#fce7f3", border: "#ec4899" },
+        { bg: "#f3e8ff", border: "#a855f7" },
+        { bg: "#f1f5f9", border: "#64748b" },
+      ];
+
+      // ================== 日历与布局 ==================
+      function initAxes() {
+        const vAxis = document.getElementById("v-time-axis");
+        vAxis.innerHTML = "";
+        const hHeader = document.getElementById("h-time-header");
+        hHeader.innerHTML =
+          '<div class="header-spacer" style="width: 70px; flex-shrink: 0; position: sticky; left: 0; background: var(--bg-body); border-right: 1px solid var(--border-light); z-index: 30;"></div>';
+        for (let i = START_HOUR; i <= END_HOUR; i++) {
+          const vLabel = document.createElement("div");
+          vLabel.className = "time-label";
+          vLabel.innerText = `${i.toString().padStart(2, "0")}:00`;
+          vAxis.appendChild(vLabel);
+          const hLabel = document.createElement("div");
+          hLabel.className = "time-header-cell";
+          hLabel.innerText = `${i.toString().padStart(2, "0")}:00`;
+          hHeader.appendChild(hLabel);
+        }
+        const extraH = document.createElement("div");
+        extraH.className = "time-header-cell";
+        extraH.style.borderRight = "none";
+        hHeader.appendChild(extraH);
+      }
+      function toggleLayout() {
+        layoutMode = layoutMode === "vertical" ? "horizontal" : "vertical";
+        localStorage.setItem("campus_layout", layoutMode);
+        applyLayoutUI();
+      }
+      function applyLayoutUI() {
+        const btn = document.getElementById("layout-toggle-btn");
+        const vWrap = document.getElementById("calendar-vertical");
+        const hWrap = document.getElementById("calendar-horizontal");
+        if (layoutMode === "vertical") {
+          btn.innerHTML = `<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="3" y1="15" x2="21" y2="15"></line></svg> 切换甘特横轴`;
+          vWrap.style.display = "block";
+          hWrap.style.display = "none";
+        } else {
+          btn.innerHTML = `<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="3" x2="9" y2="21"></line><line x1="15" y1="3" x2="15" y2="21"></line></svg> 切换日历纵轴`;
+          vWrap.style.display = "none";
+          hWrap.style.display = "flex";
+        }
+        renderClasses();
+      }
+      function renderClasses() {
+        document.querySelectorAll(".class-block").forEach((el) => el.remove());
+        document
+          .querySelectorAll(".class-block-h")
+          .forEach((el) => el.remove());
+        appData.classes.forEach((cls) => {
+          const cIdx =
+            cls.colorIndex !== undefined
+              ? cls.colorIndex
+              : cls.id % courseThemes.length;
+          const theme = courseThemes[cIdx] || courseThemes[0];
+          const schedules = cls.schedules || [
+            { day: cls.day, start: cls.start, duration: cls.duration },
+          ];
+          schedules.forEach((sch) => {
+            if (sch.start < START_HOUR || sch.start >= END_HOUR + 1) return;
+            if (layoutMode === "vertical") {
+              const column = document.querySelector(
+                `.day-column[data-day="${sch.day}"]`,
+              );
+              if (!column) return;
+              const block = document.createElement("div");
+              block.className = "class-block";
+              block.style.background = theme.bg;
+              block.style.borderLeftColor = theme.border;
+              block.style.color = "#1e293b";
+              block.style.top = `${(sch.start - START_HOUR) * HOUR_HEIGHT}px`;
+              block.style.height = `${sch.duration * HOUR_HEIGHT}px`;
+              block.onclick = (e) => {
+                e.stopPropagation();
+                openModal(cls.id);
+              };
+              block.innerHTML = `<div class="class-title">${cls.name}</div>${cls.room ? `<div class="class-room">📍 ${cls.room}</div>` : ""}`;
+              column.appendChild(block);
+            } else {
+              const track = document.querySelector(
+                `.day-track[data-h-day="${sch.day}"]`,
+              );
+              if (!track) return;
+              const block = document.createElement("div");
+              block.className = "class-block-h";
+              block.style.background = theme.bg;
+              block.style.borderLeftColor = theme.border;
+              block.style.color = "#1e293b";
+              block.style.left = `${(sch.start - START_HOUR) * HOUR_WIDTH}px`;
+              block.style.width = `${sch.duration * HOUR_WIDTH}px`;
+              block.onclick = (e) => {
+                e.stopPropagation();
+                openModal(cls.id);
+              };
+              block.innerHTML = `<div class="class-title-h">${cls.name}</div>${cls.room ? `<div class="class-room-h">📍 ${cls.room}</div>` : ""}`;
+              track.appendChild(block);
+            }
+          });
+        });
+      }
+      function renderColorPicker(selectedIdx) {
+        const container = document.getElementById("color-picker-container");
+        container.innerHTML = "";
+        courseThemes.forEach((theme, idx) => {
+          const swatch = document.createElement("div");
+          swatch.className = `color-swatch ${idx == selectedIdx ? "selected" : ""}`;
+          swatch.style.backgroundColor = theme.bg;
+          swatch.style.borderLeftColor = theme.border;
+          swatch.onclick = () => {
+            document.getElementById("c-color-idx").value = idx;
+            renderColorPicker(idx);
+          };
+          container.appendChild(swatch);
+        });
+      }
+      function handleVerticalClick(event, day) {
+        const y = event.clientY - event.target.getBoundingClientRect().top;
+        openModal(
+          null,
+          day,
+          Math.floor((START_HOUR + y / HOUR_HEIGHT) * 2) / 2,
+        );
+      }
+      function handleHorizontalClick(event, day) {
+        const x = event.clientX - event.target.getBoundingClientRect().left;
+        openModal(null, day, Math.floor((START_HOUR + x / HOUR_WIDTH) * 2) / 2);
+      }
+
+      const modal = document.getElementById("class-modal");
+      const schedulesContainer = document.getElementById("schedules-container");
+      function createScheduleRow(day = 1, timeStr = "08:00", duration = 2) {
+        const row = document.createElement("div");
+        row.className = "schedule-row";
+        row.innerHTML = `<select class="s-day"><option value="1" ${day == 1 ? "selected" : ""}>周一</option><option value="2" ${day == 2 ? "selected" : ""}>周二</option><option value="3" ${day == 3 ? "selected" : ""}>周三</option><option value="4" ${day == 4 ? "selected" : ""}>周四</option><option value="5" ${day == 5 ? "selected" : ""}>周五</option><option value="6" ${day == 6 ? "selected" : ""}>周六</option><option value="7" ${day == 7 ? "selected" : ""}>周日</option></select><input type="time" class="s-time" value="${timeStr}" required><div style="display:flex; align-items:center; gap:4px; flex:1;"><input type="number" class="s-duration" value="${duration}" step="0.5" min="0.5" max="14"><span style="font-size:0.8rem; color:var(--text-muted);">h</span></div><button type="button" class="icon-btn danger" onclick="this.parentElement.remove()" style="flex:none;"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>`;
+        return row;
+      }
+      function addScheduleRow(day = 1, timeStr = "08:00", duration = 2) {
+        schedulesContainer.appendChild(
+          createScheduleRow(day, timeStr, duration),
+        );
+      }
+      function openModal(
+        classId = null,
+        defaultDay = 1,
+        defaultStartHour = 8.0,
+      ) {
+        document.getElementById("c-id").value = classId || "";
+        const delBtn = document.getElementById("btn-delete-class");
+        schedulesContainer.innerHTML = "";
+        let colorIdx = 0;
+        if (classId) {
+          document.getElementById("modal-title").innerText = "编辑日程";
+          delBtn.style.display = "block";
+          const cls = appData.classes.find((c) => c.id === classId);
+          document.getElementById("c-name").value = cls.name;
+          document.getElementById("c-room").value = cls.room || "";
+          colorIdx =
+            cls.colorIndex !== undefined
+              ? cls.colorIndex
+              : cls.id % courseThemes.length;
+          const schedules = cls.schedules || [
+            { day: cls.day, start: cls.start, duration: cls.duration },
+          ];
+          schedules.forEach((sch) => {
+            const timeStr = `${Math.floor(sch.start).toString().padStart(2, "0")}:${Math.round(
+              (sch.start % 1) * 60,
+            )
+              .toString()
+              .padStart(2, "0")}`;
+            addScheduleRow(sch.day, timeStr, sch.duration);
+          });
+        } else {
+          document.getElementById("modal-title").innerText = "新建日程";
+          delBtn.style.display = "none";
+          document.getElementById("c-name").value = "";
+          document.getElementById("c-room").value = "";
+          const timeStr = `${Math.floor(defaultStartHour).toString().padStart(2, "0")}:${Math.round(
+            (defaultStartHour % 1) * 60,
+          )
+            .toString()
+            .padStart(2, "0")}`;
+          addScheduleRow(defaultDay, timeStr, 2);
+        }
+        document.getElementById("c-color-idx").value = colorIdx;
+        renderColorPicker(colorIdx);
+        modal.classList.add("active");
+      }
+      function closeModal() {
+        modal.classList.remove("active");
+      }
+      function saveClass() {
+        const id = document.getElementById("c-id").value,
+          name = document.getElementById("c-name").value.trim(),
+          room = document.getElementById("c-room").value.trim(),
+          colorIndex = parseInt(document.getElementById("c-color-idx").value);
+        if (!name) {
+          showToast("请输入日程名称", "error");
+          return;
+        }
+        const scheduleRows = document.querySelectorAll(".schedule-row");
+        if (scheduleRows.length === 0) {
+          showToast("请至少保留一个时间段", "error");
+          return;
+        }
+        const schedules = [];
+        let isValid = true;
+        scheduleRows.forEach((row) => {
+          const day = parseInt(row.querySelector(".s-day").value),
+            timeStr = row.querySelector(".s-time").value,
+            duration = parseFloat(row.querySelector(".s-duration").value);
+          if (!timeStr) {
+            isValid = false;
+            return;
+          }
+          const [h, m] = timeStr.split(":").map(Number);
+          schedules.push({ day, start: h + m / 60, duration });
+        });
+        if (!isValid) {
+          showToast("请将时间填写完整", "error");
+          return;
+        }
+        if (id) {
+          const idx = appData.classes.findIndex((c) => c.id == id);
+          if (idx > -1) {
+            appData.classes[idx].name = name;
+            appData.classes[idx].room = room;
+            appData.classes[idx].schedules = schedules;
+            appData.classes[idx].colorIndex = colorIndex;
+          }
+          showToast("更新成功");
+        } else {
+          appData.classes.push({
+            id: Date.now(),
+            name,
+            room,
+            schedules,
+            colorIndex,
+          });
+          showToast("添加成功");
+        }
+        saveData();
+        renderClasses();
+        closeModal();
+      }
+      function deleteClass() {
+        if (confirm("永久删除该日程？")) {
+          appData.classes = appData.classes.filter(
+            (c) => c.id != document.getElementById("c-id").value,
+          );
+          saveData();
+          renderClasses();
+          closeModal();
+          showToast("已彻底删除");
+        }
+      }
+
+      // ==========================================
+      // 🔥 双重拖拽引擎 (Subtasks & Main Cards)
+      // ==========================================
+      let dragSource = null; // 子任务的拖拽源
+      let cardDragSource = null; // 主卡片的拖拽源
+
+      // ------ A. 子任务的拖拽事件 ------
+      function handleDragStart(e, type, parentId, taskId) {
+        e.stopPropagation(); // 阻止事件冒泡到主卡片
+        dragSource = { type, parentId, taskId };
+        e.target.classList.add("dragging");
+        e.dataTransfer.effectAllowed = "move";
+        e.dataTransfer.setData("text/plain", taskId);
+      }
+      function handleDragOver(e) {
+        if (!dragSource) return; // 如果正在拖主卡片，子任务不响应
+        e.preventDefault();
+        e.stopPropagation();
+        e.dataTransfer.dropEffect = "move";
+        const target = e.currentTarget;
+        if (target && !target.classList.contains("dragging"))
+          target.classList.add("drag-over");
+      }
+      function handleDragLeave(e) {
+        if (!dragSource) return;
+        e.stopPropagation();
+        e.currentTarget.classList.remove("drag-over");
+      }
+      function handleDragEnd(e) {
+        e.stopPropagation();
+        e.target.classList.remove("dragging");
+        document
+          .querySelectorAll(".task-item")
+          .forEach((el) => el.classList.remove("drag-over"));
+        dragSource = null;
+      }
+      function handleDrop(e, targetType, targetParentId, targetTaskId) {
+        e.preventDefault();
+        e.stopPropagation();
+        e.currentTarget.classList.remove("drag-over");
+        if (!dragSource) return;
+        if (
+          dragSource.type !== targetType ||
+          dragSource.parentId !== targetParentId
+        ) {
+          showToast("只能在当前卡片内排序子任务", "error");
+          return;
+        }
+        if (dragSource.taskId === targetTaskId) return;
+
+        let dataArray =
+          targetType === "project" ? appData.projects : appData.assignments;
+        let parentObj = dataArray.find((p) => p.id === dragSource.parentId);
+        if (parentObj) {
+          const tasks = parentObj.tasks;
+          const sourceIndex = tasks.findIndex(
+            (t) => t.id === dragSource.taskId,
+          );
+          const targetIndex = tasks.findIndex((t) => t.id === targetTaskId);
+          if (sourceIndex > -1 && targetIndex > -1) {
+            const [movedItem] = tasks.splice(sourceIndex, 1);
+            tasks.splice(targetIndex, 0, movedItem);
+            saveData();
+            if (targetType === "project") renderProjects();
+            else renderAssignments();
+          }
+        }
+      }
+
+      // ------ B. 主卡片的拖拽事件 ------
+      function handleCardDragStart(e, type, cardId) {
+        if (
+          e.target.classList.contains("task-item") ||
+          e.target.closest(".task-item")
+        )
+          return; // 防止误触
+        cardDragSource = { type, id: cardId };
+        e.currentTarget.classList.add("dragging-card");
+        e.dataTransfer.effectAllowed = "move";
+        e.dataTransfer.setData("text/plain", cardId);
+        e.stopPropagation();
+      }
+      function handleCardDragOver(e) {
+        if (!cardDragSource) return; // 如果正在拖子任务，主卡片不响应
+        e.preventDefault();
+        e.stopPropagation();
+        e.dataTransfer.dropEffect = "move";
+        const target = e.currentTarget;
+        if (target && !target.classList.contains("dragging-card"))
+          target.classList.add("drag-over-card");
+      }
+      function handleCardDragLeave(e) {
+        if (!cardDragSource) return;
+        e.stopPropagation();
+        e.currentTarget.classList.remove("drag-over-card");
+      }
+      function handleCardDragEnd(e) {
+        e.stopPropagation();
+        e.currentTarget.classList.remove("dragging-card");
+        document
+          .querySelectorAll(".project-card")
+          .forEach((el) => el.classList.remove("drag-over-card"));
+        cardDragSource = null;
+      }
+      function handleCardDrop(e, targetType, targetId) {
+        e.preventDefault();
+        e.stopPropagation();
+        e.currentTarget.classList.remove("drag-over-card");
+        if (!cardDragSource) return;
+        if (cardDragSource.type !== targetType) {
+          showToast("无法将作业拖入项目区", "error");
+          return;
+        }
+        if (cardDragSource.id === targetId) return;
+
+        let dataArray =
+          targetType === "project-card"
+            ? appData.projects
+            : appData.assignments;
+        const sourceIndex = dataArray.findIndex(
+          (p) => p.id === cardDragSource.id,
+        );
+        const targetIndex = dataArray.findIndex((p) => p.id === targetId);
+
+        if (sourceIndex > -1 && targetIndex > -1) {
+          const [movedItem] = dataArray.splice(sourceIndex, 1);
+          dataArray.splice(targetIndex, 0, movedItem);
+          saveData();
+          if (targetType === "project-card") renderProjects();
+          else renderAssignments();
+        }
+        cardDragSource = null;
+      }
+
+      // ==========================================
+      // 渲染函数：注入双重拖拽 HTML
+      // ==========================================
+      function generateTaskHtml(t, parentId, type) {
+        return `<div class="task-item ${t.completed ? "completed" : ""}" draggable="true" ondragstart="handleDragStart(event, '${type}', ${parentId}, ${t.id})" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondragend="handleDragEnd(event)" ondrop="handleDrop(event, '${type}', ${parentId}, ${t.id})"><div class="task-item-left"><div class="drag-handle" title="拖拽排序"><svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><path d="M8 6a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM8 12a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM8 18a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM20 6a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM20 12a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM20 18a2 2 0 1 1-4 0 2 2 0 0 1 4 0z"></path></svg></div><label class="custom-checkbox"><input type="checkbox" ${t.completed ? "checked" : ""} onchange="${type === "project" ? "toggleTask" : "toggleAssignmentTask"}(${parentId}, ${t.id})"><span class="checkmark"></span></label><span>${t.text}</span></div><button class="icon-btn delete-btn danger" onclick="${type === "project" ? "deleteTask" : "deleteAssignmentTask"}(${parentId}, ${t.id})"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button></div>`;
+      }
+
+      function renderAssignments() {
+        const container = document.getElementById("assignment-container");
+        container.innerHTML = "";
+        if (appData.assignments.length === 0) {
+          container.innerHTML = `<div class="empty-state"><svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg><h4>没有待处理作业</h4></div>`;
+          return;
+        }
+        appData.assignments.forEach((assign) => {
+          const total = assign.tasks.length,
+            completed = assign.tasks.filter((t) => t.completed).length,
+            progressPercent =
+              total === 0 ? 0 : Math.round((completed / total) * 100);
+          const card = document.createElement("div");
+          card.className = "project-card";
+          // 赋予主卡片可拖拽属性
+          card.setAttribute("draggable", "true");
+          card.ondragstart = (e) =>
+            handleCardDragStart(e, "assign-card", assign.id);
+          card.ondragover = handleCardDragOver;
+          card.ondragleave = handleCardDragLeave;
+          card.ondragend = handleCardDragEnd;
+          card.ondrop = (e) => handleCardDrop(e, "assign-card", assign.id);
+
+          const tasksHtml = assign.tasks
+            .map((t) => generateTaskHtml(t, assign.id, "assign"))
+            .join("");
+          card.innerHTML = `<div class="project-card-header"><div style="display:flex; align-items:center;"><div class="card-drag-handle" title="拖拽排序整个分类"><svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M8 6a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM8 12a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM8 18a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM20 6a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM20 12a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM20 18a2 2 0 1 1-4 0 2 2 0 0 1 4 0z"></path></svg></div><h3>${assign.name}</h3></div><button class="icon-btn danger" onclick="deleteAssignment(${assign.id})"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button></div><div class="progress-container"><div class="progress-bar" style="width: ${progressPercent}%; background: linear-gradient(90deg, #10b981, #34d399);"></div></div><div class="task-list">${tasksHtml}</div><div class="add-subtask-area"><input type="text" id="assign-task-input-${assign.id}" placeholder="输入具体作业..." onkeypress="if(event.key==='Enter') addAssignmentTask(${assign.id})"></div>`;
+          container.appendChild(card);
+        });
+      }
+      function addAssignment() {
+        const name = document
+          .getElementById("new-assignment-input")
+          .value.trim();
+        if (!name) return;
+        appData.assignments.push({ id: Date.now(), name: name, tasks: [] });
+        saveData();
+        renderAssignments();
+        document.getElementById("new-assignment-input").value = "";
+        showToast("作业分类已创建");
+      }
+      function deleteAssignment(assignId) {
+        if (confirm("删除该作业分类？")) {
+          appData.assignments = appData.assignments.filter(
+            (a) => a.id !== assignId,
+          );
+          saveData();
+          renderAssignments();
+          showToast("已删除");
+        }
+      }
+      function addAssignmentTask(assignId) {
+        const input = document.getElementById(`assign-task-input-${assignId}`);
+        const text = input.value.trim();
+        if (!text) return;
+        const assign = appData.assignments.find((a) => a.id === assignId);
+        if (assign) {
+          assign.tasks.push({ id: Date.now(), text: text, completed: false });
+          saveData();
+          renderAssignments();
+          input.value = "";
+        }
+      }
+      function toggleAssignmentTask(assignId, taskId) {
+        const assign = appData.assignments.find((a) => a.id === assignId);
+        if (assign) {
+          const task = assign.tasks.find((t) => t.id === taskId);
+          if (task) {
+            task.completed = !task.completed;
+            saveData();
+            renderAssignments();
+          }
+        }
+      }
+      function deleteAssignmentTask(assignId, taskId) {
+        const assign = appData.assignments.find((a) => a.id === assignId);
+        if (assign) {
+          assign.tasks = assign.tasks.filter((t) => t.id !== taskId);
+          saveData();
+          renderAssignments();
+        }
+      }
+
+      function renderProjects() {
+        const container = document.getElementById("project-container");
+        container.innerHTML = "";
+        if (appData.projects.length === 0) {
+          container.innerHTML = `<div class="empty-state"><svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg><h4>没有长线项目</h4></div>`;
+          return;
+        }
+        appData.projects.forEach((proj) => {
+          const total = proj.tasks.length,
+            completed = proj.tasks.filter((t) => t.completed).length,
+            progressPercent =
+              total === 0 ? 0 : Math.round((completed / total) * 100);
+          const card = document.createElement("div");
+          card.className = "project-card";
+          // 赋予主卡片可拖拽属性
+          card.setAttribute("draggable", "true");
+          card.ondragstart = (e) =>
+            handleCardDragStart(e, "project-card", proj.id);
+          card.ondragover = handleCardDragOver;
+          card.ondragleave = handleCardDragLeave;
+          card.ondragend = handleCardDragEnd;
+          card.ondrop = (e) => handleCardDrop(e, "project-card", proj.id);
+
+          const tasksHtml = proj.tasks
+            .map((t) => generateTaskHtml(t, proj.id, "project"))
+            .join("");
+          card.innerHTML = `<div class="project-card-header"><div style="display:flex; align-items:center;"><div class="card-drag-handle" title="拖拽排序整个项目"><svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M8 6a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM8 12a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM8 18a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM20 6a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM20 12a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM20 18a2 2 0 1 1-4 0 2 2 0 0 1 4 0z"></path></svg></div><h3>${proj.name}</h3></div><button class="icon-btn danger" onclick="deleteProject(${proj.id})"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button></div><div class="progress-container"><div class="progress-bar" style="width: ${progressPercent}%;"></div></div><div class="task-list">${tasksHtml}</div><div class="add-subtask-area"><input type="text" id="subtask-input-${proj.id}" placeholder="输入子任务..." onkeypress="if(event.key==='Enter') addSubTask(${proj.id})"></div>`;
+          container.appendChild(card);
+        });
+      }
+      function addProject() {
+        const name = document.getElementById("new-project-input").value.trim();
+        if (!name) return;
+        appData.projects.push({ id: Date.now(), name: name, tasks: [] });
+        saveData();
+        renderProjects();
+        document.getElementById("new-project-input").value = "";
+        showToast("项目创建成功");
+      }
+      function deleteProject(projectId) {
+        if (confirm("永久删除项目？")) {
+          appData.projects = appData.projects.filter((p) => p.id !== projectId);
+          saveData();
+          renderProjects();
+          showToast("已删除");
+        }
+      }
+      function addSubTask(projectId) {
+        const input = document.getElementById(`subtask-input-${projectId}`);
+        const text = input.value.trim();
+        if (!text) return;
+        const proj = appData.projects.find((p) => p.id === projectId);
+        if (proj) {
+          proj.tasks.push({ id: Date.now(), text: text, completed: false });
+          saveData();
+          renderProjects();
+          input.value = "";
+        }
+      }
+      function toggleTask(projectId, taskId) {
+        const proj = appData.projects.find((p) => p.id === projectId);
+        if (proj) {
+          const task = proj.tasks.find((t) => t.id === taskId);
+          if (task) {
+            task.completed = !task.completed;
+            saveData();
+            renderProjects();
+          }
+        }
+      }
+      function deleteTask(projectId, taskId) {
+        const proj = appData.projects.find((p) => p.id === projectId);
+        if (proj) {
+          proj.tasks = proj.tasks.filter((t) => t.id !== taskId);
+          saveData();
+          renderProjects();
+        }
+      }
+
+      // 专注模式
+      let timer,
+        isRunning = false,
+        timeLeft = 25 * 60,
+        currentMode = "work";
+      function updateDisplay() {
+        document.getElementById("time-display").textContent = `${Math.floor(
+          timeLeft / 60,
+        )
+          .toString()
+          .padStart(2, "0")}:${(timeLeft % 60).toString().padStart(2, "0")}`;
+      }
+      function setTimerMode(mode) {
+        clearInterval(timer);
+        isRunning = false;
+        currentMode = mode;
+        const btn = document.getElementById("timer-btn");
+        btn.textContent = "开始专注";
+        btn.style.background = "var(--primary)";
+        document.getElementById("mode-work").classList.remove("active");
+        document.getElementById("mode-break").classList.remove("active");
+        document.getElementById(`mode-${mode}`).classList.add("active");
+        timeLeft = mode === "work" ? 25 * 60 : 5 * 60;
+        updateDisplay();
+      }
+      function toggleTimer() {
+        const btn = document.getElementById("timer-btn");
+        if (isRunning) {
+          clearInterval(timer);
+          btn.textContent = "继续";
+          btn.style.background = "#f59e0b";
+        } else {
+          btn.textContent = "暂停";
+          btn.style.background = "var(--danger)";
+          timer = setInterval(() => {
+            if (timeLeft > 0) {
+              timeLeft--;
+              updateDisplay();
+            } else {
+              clearInterval(timer);
+              showToast("⏰ 计时结束！", "success");
+              resetTimer();
+            }
+          }, 1000);
+        }
+        isRunning = !isRunning;
+      }
+      function resetTimer() {
+        setTimerMode(currentMode);
+      }
+
+      window.onload = () => {
+        initAxes();
+        applyLayoutUI();
+        renderProjects();
+        renderAssignments();
+      };
+    </script>
+  </body>
+</html>
