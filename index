@@ -5,9 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>PlanOS</title>
     <style>
-      /* ==========================================
-           1. 现代设计系统 (Design Tokens)
-           ========================================== */
       :root {
         --primary: #6366f1;
         --primary-hover: #4f46e5;
